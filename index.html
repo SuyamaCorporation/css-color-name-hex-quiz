@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSS Named Color to Hex Quiz</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @keyframes shake {
+    0%,100%{transform:translateX(0)}
+    20%{transform:translateX(-8px)}
+    40%{transform:translateX(8px)}
+    60%{transform:translateX(-6px)}
+    80%{transform:translateX(6px)}
+  }
+  .shake { animation: shake 0.4s ease; }
+  @keyframes correctBounce {
+    0%{transform:scale(1)}
+    30%{transform:scale(1.08)}
+    60%{transform:scale(0.96)}
+    100%{transform:scale(1)}
+  }
+  .correct-bounce { animation: correctBounce 0.35s ease; }
+  @keyframes timerPulse {
+    0%,100%{opacity:1}
+    50%{opacity:0.5}
+  }
+  .timer-danger { animation: timerPulse 0.5s ease-in-out infinite; color: #f87171; }
+  .progress-bar { transition: width 0.3s ease; }
+  @keyframes fadeSlide {
+    from{opacity:0;transform:translateY(10px)}
+    to{opacity:1;transform:translateY(0)}
+  }
+  .fade-slide { animation: fadeSlide 0.3s ease-out; }
+</style>
+</head>
+<body class="bg-gray-950 text-white min-h-screen">
+
+<div class="max-w-xl mx-auto px-4 py-8">
+  <!-- Header -->
+  <div class="text-center mb-6">
+    <h1 class="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent mb-1">CSS Color Quiz</h1>
+    <p class="text-gray-400 text-sm">Master all 147 CSS named colors</p>
+  </div>
+
+  <!-- START SCREEN -->
+  <div id="startScreen" class="bg-gray-900 rounded-2xl p-8 text-center">
+    <div class="text-6xl mb-4">🎨</div>
+    <h2 class="text-2xl font-bold mb-2">How well do you know CSS colors?</h2>
+    <p class="text-gray-400 mb-6">20 questions · 20 seconds each · 147 named colors</p>
+
+    <div class="mb-6">
+      <p class="text-sm text-gray-400 mb-3 font-medium">Game Mode</p>
+      <div class="grid grid-cols-2 gap-3">
+        <button onclick="startGame('name-to-color')" class="bg-gradient-to-br from-cyan-700 to-blue-800 hover:from-cyan-600 hover:to-blue-700 rounded-xl p-4 text-left transition-all" aria-label="Name to Color mode">
+          <div class="text-2xl mb-2">🔤 → 🎨</div>
+          <div class="font-semibold">Name to Color</div>
+          <div class="text-xs text-gray-300 mt-1">See the name, pick the swatch</div>
+        </button>
+        <button onclick="startGame('color-to-name')" class="bg-gradient-to-br from-purple-700 to-pink-800 hover:from-purple-600 hover:to-pink-700 rounded-xl p-4 text-left transition-all" aria-label="Color to Name mode">
+          <div class="text-2xl mb-2">🎨 → 🔤</div>
+          <div class="font-semibold">Color to Name</div>
+          <div class="text-xs text-gray-300 mt-1">See the color, pick the name</div>
+        </button>
+      </div>
+    </div>
+
+    <div id="highScoreDisplay" class="text-sm text-gray-500"></div>
+  </div>
+
+  <!-- GAME SCREEN -->
+  <div id="gameScreen" class="hidden">
+    <!-- Progress & Score -->
+    <div class="flex items-center justify-between mb-4">
+      <div class="text-sm text-gray-400">
+        Question <span id="qNumber" class="font-bold text-white">1</span>/20
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="text-sm">Score: <span id="scoreDisplay" class="font-bold text-cyan-400">0</span></span>
+        <span id="timerDisplay" class="font-mono font-bold text-lg w-8 text-center" aria-live="polite">20</span>
+      </div>
+    </div>
+
+    <!-- Progress bar -->
+    <div class="h-1.5 bg-gray-800 rounded-full mb-5">
+      <div id="progressBar" class="progress-bar h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full" style="width:0%"></div>
+    </div>
+
+    <!-- Timer bar -->
+    <div class="h-1 bg-gray-800 rounded-full mb-6">
+      <div id="timerBar" class="h-full bg-gradient-to-r from-green-500 to-emerald-400 rounded-full transition-all duration-1000 ease-linear" style="width:100%"></div>
+    </div>
+
+    <!-- Streak -->
+    <div class="flex justify-center gap-2 mb-5" id="streakDots"></div>
+
+    <!-- Question Area -->
+    <div id="questionArea" class="bg-gray-900 rounded-2xl p-6 mb-5 fade-slide">
+      <!-- Filled by JS -->
+    </div>
+
+    <!-- Options -->
+    <div id="optionsGrid" class="grid grid-cols-2 gap-3 mb-5">
+      <!-- Filled by JS -->
+    </div>
+
+    <!-- Feedback -->
+    <div id="feedback" class="hidden bg-gray-900 rounded-xl p-4 fade-slide">
+      <!-- Filled by JS -->
+    </div>
+
+    <button id="nextBtn" onclick="nextQuestion()" class="hidden w-full bg-indigo-700 hover:bg-indigo-600 rounded-xl py-3 font-semibold transition-all mt-3" aria-label="Next question">
+      Next →
+    </button>
+  </div>
+
+  <!-- RESULT SCREEN -->
+  <div id="resultScreen" class="hidden bg-gray-900 rounded-2xl p-8 text-center">
+    <div id="resultEmoji" class="text-6xl mb-4">🎉</div>
+    <h2 id="resultTitle" class="text-2xl font-bold mb-2"></h2>
+    <p id="resultScore" class="text-4xl font-bold text-cyan-400 mb-1"></p>
+    <p id="resultDetail" class="text-gray-400 mb-2"></p>
+    <p id="highScoreMsg" class="text-yellow-400 font-semibold mb-6"></p>
+
+    <div id="resultStats" class="grid grid-cols-3 gap-3 mb-6">
+      <!-- Filled by JS -->
+    </div>
+
+    <div class="flex gap-3">
+      <button onclick="startGame(currentMode)" class="flex-1 bg-cyan-700 hover:bg-cyan-600 rounded-xl py-3 font-semibold transition-all" aria-label="Play again">
+        🔄 Play Again
+      </button>
+      <button onclick="showStart()" class="flex-1 bg-gray-700 hover:bg-gray-600 rounded-xl py-3 font-semibold transition-all" aria-label="Back to menu">
+        🏠 Menu
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// All 147 CSS named colors
+const CSS_COLORS = [
+  {name:'aliceblue',hex:'#F0F8FF',fun:'Named after Alice Roosevelt Longworth, daughter of President Theodore Roosevelt.'},
+  {name:'antiquewhite',hex:'#FAEBD7',fun:'Antiquewhite evokes the color of aged parchment or old ivory.'},
+  {name:'aqua',hex:'#00FFFF',fun:'Aqua is identical to cyan and is one of the three secondary colors in RGB.'},
+  {name:'aquamarine',hex:'#7FFFD4',fun:'Named after the aquamarine gemstone, which gets its color from iron impurities.'},
+  {name:'azure',hex:'#F0FFFF',fun:'Azure comes from the Persian word "lāzhward" meaning lapis lazuli.'},
+  {name:'beige',hex:'#F5F5DC',fun:'Beige was originally the natural, undyed color of wool.'},
+  {name:'bisque',hex:'#FFE4C4',fun:'Bisque is named after the creamy-white seafood soup of French origin.'},
+  {name:'black',hex:'#000000',fun:'Black is the darkest color, absorbing all visible light.'},
+  {name:'blanchedalmond',hex:'#FFEBCD',fun:'Blanched almond is the color of almonds after they have been blanched in hot water.'},
+  {name:'blue',hex:'#0000FF',fun:'Blue is one of three primary colors in the RGB model.'},
+  {name:'blueviolet',hex:'#8A2BE2',fun:'Blue violet is named after the flowers of the viola plant.'},
+  {name:'brown',hex:'#A52A2A',fun:'Brown is a composite color produced by combining red, yellow, and black.'},
+  {name:'burlywood',hex:'#DEB887',fun:'Burlywood is the color of untreated or natural wood.'},
+  {name:'cadetblue',hex:'#5F9EA0',fun:'Cadet blue was originally the color of the uniform of the military cadets at West Point.'},
+  {name:'chartreuse',hex:'#7FFF00',fun:'Chartreuse is named after the Chartreuse liqueur, made by French monks since 1737.'},
+  {name:'chocolate',hex:'#D2691E',fun:'Chocolate was introduced as a web color in the 1990s, matching dark milk chocolate.'},
+  {name:'coral',hex:'#FF7F50',fun:'Coral is named after the sea creature that forms reefs in tropical oceans.'},
+  {name:'cornflowerblue',hex:'#6495ED',fun:'Cornflower blue is often used for sky colors in paintings and illustrations.'},
+  {name:'cornsilk',hex:'#FFF8DC',fun:'Cornsilk is the color of corn silk — the delicate threads on a corn cob.'},
+  {name:'crimson',hex:'#DC143C',fun:'Crimson was originally made from the dried bodies of the kermes insect.'},
+  {name:'cyan',hex:'#00FFFF',fun:'Cyan is the complementary color of red and is used in CMYK printing.'},
+  {name:'darkblue',hex:'#00008B',fun:'Dark blue is a rich, deep shade used in many national flags.'},
+  {name:'darkcyan',hex:'#008B8B',fun:'Dark cyan is a muted teal, used frequently in web design for readability.'},
+  {name:'darkgoldenrod',hex:'#B8860B',fun:'Goldenrod plants bloom in late summer with bright golden yellow flowers.'},
+  {name:'darkgray',hex:'#A9A9A9',fun:'Dark gray sits between pure black and medium gray on the spectrum.'},
+  {name:'darkgreen',hex:'#006400',fun:'Dark green is the color of deep forest foliage and evergreen trees.'},
+  {name:'darkkhaki',hex:'#BDB76B',fun:'Khaki was originally used for British army uniforms in India.'},
+  {name:'darkmagenta',hex:'#8B008B',fun:'Magenta was discovered by accident in 1859 by French chemist François-Emmanuel Verguin.'},
+  {name:'darkolivegreen',hex:'#556B2F',fun:'Olive green is a military staple color inspired by the olive tree.'},
+  {name:'darkorange',hex:'#FF8C00',fun:'Dark orange is a bold color that conveys energy and enthusiasm.'},
+  {name:'darkorchid',hex:'#9932CC',fun:'Orchids are one of the largest families of flowering plants.'},
+  {name:'darkred',hex:'#8B0000',fun:'Dark red is often associated with wine and has been used in heraldry for centuries.'},
+  {name:'darksalmon',hex:'#E9967A',fun:'Salmon is named after the pinkish-orange color of salmon fish flesh.'},
+  {name:'darkseagreen',hex:'#8FBC8F',fun:'Sea green evokes the color of shallow, sunlit ocean water.'},
+  {name:'darkslateblue',hex:'#483D8B',fun:'Slate blue combines the calm of blue with a hint of purple.'},
+  {name:'darkslategray',hex:'#2F4F4F',fun:'Slate gray is the color of slate rock used in roofing.'},
+  {name:'darkturquoise',hex:'#00CED1',fun:'Turquoise was historically mined in Persia and is one of the oldest gemstones.'},
+  {name:'darkviolet',hex:'#9400D3',fun:'Violet sits at the end of the visible light spectrum with the shortest wavelength.'},
+  {name:'deeppink',hex:'#FF1493',fun:'Deep pink is a vivid, electric shade commonly used in neon signs.'},
+  {name:'deepskyblue',hex:'#00BFFF',fun:'Deep sky blue matches the intense blue of a clear midday sky.'},
+  {name:'dimgray',hex:'#696969',fun:'Dim gray is a practical neutral used extensively in web UI design.'},
+  {name:'dodgerblue',hex:'#1E90FF',fun:'Dodger blue is named after the Los Angeles Dodgers baseball team colors.'},
+  {name:'firebrick',hex:'#B22222',fun:'Firebrick is the red-orange color of clay bricks fired in a kiln.'},
+  {name:'floralwhite',hex:'#FFFAF0',fun:'Floral white is a warm off-white, like the color of many cream-colored flowers.'},
+  {name:'forestgreen',hex:'#228B22',fun:'Forest green captures the deep color of a dense, shaded woodland.'},
+  {name:'fuchsia',hex:'#FF00FF',fun:'Fuchsia is identical to magenta and named after the fuchsia plant.'},
+  {name:'gainsboro',hex:'#DCDCDC',fun:'Gainsboro is named after Thomas Gainsborough, the 18th-century British painter.'},
+  {name:'ghostwhite',hex:'#F8F8FF',fun:'Ghost white is a very pale tint of blue-white, evoking a spectral quality.'},
+  {name:'gold',hex:'#FFD700',fun:'CSS gold is brighter than the traditional artistic gold color.'},
+  {name:'goldenrod',hex:'#DAA520',fun:'Goldenrod is inspired by the tall wildflower common in North American meadows.'},
+  {name:'gray',hex:'#808080',fun:'Gray is the perfect midpoint between pure black and pure white.'},
+  {name:'green',hex:'#008000',fun:'CSS green is half-brightness green — pure green is lime in CSS.'},
+  {name:'greenyellow',hex:'#ADFF2F',fun:'Green yellow is a vivid chartreuse-like color used in safety gear.'},
+  {name:'honeydew',hex:'#F0FFF0',fun:'Honeydew is the green tint found in honeydew melon flesh.'},
+  {name:'hotpink',hex:'#FF69B4',fun:'Hot pink became popular in Western fashion in the 1950s through Elsa Schiaparelli.'},
+  {name:'indianred',hex:'#CD5C5C',fun:'Indian red was the color used by Native American tribes in face paint.'},
+  {name:'indigo',hex:'#4B0082',fun:'Indigo was one of the most valuable dye plants, traded along the Silk Road.'},
+  {name:'ivory',hex:'#FFFFF0',fun:'Ivory is the warm white of elephant tusks and piano keys.'},
+  {name:'khaki',hex:'#F0E68C',fun:'Khaki means "soil" or "dust" in Urdu, adopted for military uniforms.'},
+  {name:'lavender',hex:'#E6E6FA',fun:'Lavender is a pale purple named after the flowering lavender plant.'},
+  {name:'lavenderblush',hex:'#FFF0F5',fun:'Lavender blush is an extremely pale pink with a hint of lavender.'},
+  {name:'lawngreen',hex:'#7CFC00',fun:'Lawn green captures the bright emerald of a freshly cut, healthy lawn.'},
+  {name:'lemonchiffon',hex:'#FFFACD',fun:'Chiffon is a light, sheer fabric — lemon chiffon is the palest yellow.'},
+  {name:'lightblue',hex:'#ADD8E6',fun:'Light blue is associated with calmness, openness, and clear skies.'},
+  {name:'lightcoral',hex:'#F08080',fun:'Light coral is a warm pinkish-red, softer than pure coral.'},
+  {name:'lightcyan',hex:'#E0FFFF',fun:'Light cyan is a pale aqua, almost white with a hint of turquoise.'},
+  {name:'lightgoldenrodyellow',hex:'#FAFAD2',fun:'One of CSS\'s longest color names — a pale cream-yellow like light goldenrod.'},
+  {name:'lightgray',hex:'#D3D3D3',fun:'Light gray is ubiquitous in modern minimal UI design.'},
+  {name:'lightgreen',hex:'#90EE90',fun:'Light green evokes spring growth and fresh foliage.'},
+  {name:'lightpink',hex:'#FFB6C1',fun:'Light pink is traditionally associated with softness and romance.'},
+  {name:'lightsalmon',hex:'#FFA07A',fun:'Salmon pink is inspired by the flesh of raw Atlantic salmon.'},
+  {name:'lightseagreen',hex:'#20B2AA',fun:'Light sea green resembles tropical shallow water over white sand.'},
+  {name:'lightskyblue',hex:'#87CEFA',fun:'Light sky blue captures the color of a clear daytime sky.'},
+  {name:'lightslategray',hex:'#778899',fun:'Light slate gray is a cool blue-gray used in industrial design.'},
+  {name:'lightsteelblue',hex:'#B0C4DE',fun:'Steel blue is the color of polished, untreated steel with a bluish tinge.'},
+  {name:'lightyellow',hex:'#FFFFE0',fun:'Light yellow is a very pale, warm neutral used as a soft background color.'},
+  {name:'lime',hex:'#00FF00',fun:'Lime is pure maximum-brightness green in the RGB model.'},
+  {name:'limegreen',hex:'#32CD32',fun:'Lime green evokes the vivid color of a lime citrus fruit.'},
+  {name:'linen',hex:'#FAF0E6',fun:'Linen is the warm off-white of natural undyed linen fabric.'},
+  {name:'magenta',hex:'#FF00FF',fun:'Magenta is one of three subtractive primaries in CMYK printing.'},
+  {name:'maroon',hex:'#800000',fun:'Maroon comes from the French word "marron" meaning chestnut.'},
+  {name:'mediumaquamarine',hex:'#66CDAA',fun:'Aquamarine gemstones range from pale blue to teal to green.'},
+  {name:'mediumblue',hex:'#0000CD',fun:'Medium blue is a rich mid-range blue used in many digital designs.'},
+  {name:'mediumorchid',hex:'#BA55D3',fun:'Orchid flowers range from white to pink, magenta, and deep purple.'},
+  {name:'mediumpurple',hex:'#9370DB',fun:'Purple was historically the most expensive dye, made from sea snails.'},
+  {name:'mediumseagreen',hex:'#3CB371',fun:'Sea green is inspired by the bioluminescent glow of certain ocean algae.'},
+  {name:'mediumslateblue',hex:'#7B68EE',fun:'Slate blue blends the serenity of blue with a hint of purple depth.'},
+  {name:'mediumspringgreen',hex:'#00FA9A',fun:'Spring green captures the vivid color of fresh new spring leaves.'},
+  {name:'mediumturquoise',hex:'#48D1CC',fun:'Turquoise has been valued as a gemstone for over 5000 years.'},
+  {name:'mediumvioletred',hex:'#C71585',fun:'Violet red sits between red and purple on the color wheel.'},
+  {name:'midnightblue',hex:'#191970',fun:'Midnight blue evokes a clear night sky just after twilight.'},
+  {name:'mintcream',hex:'#F5FFFA',fun:'Mint cream is an almost-white with a very faint mint-green cast.'},
+  {name:'mistyrose',hex:'#FFE4E1',fun:'Misty rose is a delicate, pale pinkish-white like morning mist.'},
+  {name:'moccasin',hex:'#FFE4B5',fun:'Moccasin is the tan-peach color of traditional Native American footwear.'},
+  {name:'navajowhite',hex:'#FFDEAD',fun:'Navajo white is inspired by the warm sand tones of the American Southwest.'},
+  {name:'navy',hex:'#000080',fun:'Navy blue has been the traditional color of naval uniforms since the 1740s.'},
+  {name:'oldlace',hex:'#FDF5E6',fun:'Old lace is the warm cream color of aged, antique lace fabric.'},
+  {name:'olive',hex:'#808000',fun:'Olive is the dark yellow-green color of unripened olive fruits.'},
+  {name:'olivedrab',hex:'#6B8E23',fun:'Olive drab was used as standard US Army uniform color during WWII.'},
+  {name:'orange',hex:'#FFA500',fun:'Orange is the only color named directly after a fruit in the English language.'},
+  {name:'orangered',hex:'#FF4500',fun:'Orange red is the color of glowing embers and fierce autumn sunsets.'},
+  {name:'orchid',hex:'#DA70D6',fun:'The orchid family (Orchidaceae) has over 25,000 documented species.'},
+  {name:'palegoldenrod',hex:'#EEE8AA',fun:'Pale goldenrod is a soft yellow-green, like dried goldenrod flowers in winter.'},
+  {name:'palegreen',hex:'#98FB98',fun:'Pale green is associated with new growth, spring freshness, and nature.'},
+  {name:'paleturquoise',hex:'#AFEEEE',fun:'Pale turquoise is a very light aqua, almost white with a cool blue-green tinge.'},
+  {name:'palevioletred',hex:'#DB7093',fun:'Pale violet red is a dusty rose, softer than hot pink.'},
+  {name:'papayawhip',hex:'#FFEFD5',fun:'Papaya whip is the creamy, pale orange-yellow color of ripe papaya flesh.'},
+  {name:'peachpuff',hex:'#FFDAB9',fun:'Peach puff is inspired by the soft, downy color of a ripe peach skin.'},
+  {name:'peru',hex:'#CD853F',fun:'Peru is a warm brown inspired by the earthy tones of Peruvian pottery.'},
+  {name:'pink',hex:'#FFC0CB',fun:'Pink was not distinguished as a separate color in English until the 17th century.'},
+  {name:'plum',hex:'#DDA0DD',fun:'Plum is a soft, dusty purple-pink inspired by dried plum fruits.'},
+  {name:'powderblue',hex:'#B0E0E6',fun:'Powder blue is a very pale blue, lighter than baby blue.'},
+  {name:'purple',hex:'#800080',fun:'In ancient Rome, only the emperor was permitted to wear purple.'},
+  {name:'rebeccapurple',hex:'#663399',fun:'Added to CSS in 2014 in honor of Rebecca Meyer, daughter of web standards pioneer Eric Meyer.'},
+  {name:'red',hex:'#FF0000',fun:'Red is the first color in the rainbow and has the longest wavelength of visible light.'},
+  {name:'rosybrown',hex:'#BC8F8F',fun:'Rosy brown blends the warmth of pink with earthy brown tones.'},
+  {name:'royalblue',hex:'#4169E1',fun:'Royal blue has been the color of British royalty since at least the 19th century.'},
+  {name:'saddlebrown',hex:'#8B4513',fun:'Saddle brown matches the rich color of treated leather saddles.'},
+  {name:'salmon',hex:'#FA8072',fun:'Salmon is inspired by the characteristic pink-orange of cooked salmon flesh.'},
+  {name:'sandybrown',hex:'#F4A460',fun:'Sandy brown captures the warm, golden color of beach sand.'},
+  {name:'seagreen',hex:'#2E8B57',fun:'Sea green resembles the color of shallow ocean water over sandy seabeds.'},
+  {name:'seashell',hex:'#FFF5EE',fun:'Seashell is an off-white with a warm pinkish tint, like the inside of a shell.'},
+  {name:'sienna',hex:'#A0522D',fun:'Sienna is an earth pigment named after the Italian city of Siena.'},
+  {name:'silver',hex:'#C0C0C0',fun:'Silver is one of only two CSS colors named after precious metals.'},
+  {name:'skyblue',hex:'#87CEEB',fun:'Sky blue is the color of the daytime sky due to Rayleigh scattering of sunlight.'},
+  {name:'slateblue',hex:'#6A5ACD',fun:'Slate blue evokes the color of polished slate rock with a purple hue.'},
+  {name:'slategray',hex:'#708090',fun:'Slate gray is a cool, blue-tinted gray used widely in modern UI design.'},
+  {name:'snow',hex:'#FFFAFA',fun:'Snow is almost white with a very slight pinkish tint.'},
+  {name:'springgreen',hex:'#00FF7F',fun:'Spring green is a vivid cyan-green that represents early spring growth.'},
+  {name:'steelblue',hex:'#4682B4',fun:'Steel blue is the blue-gray color of polished stainless steel.'},
+  {name:'tan',hex:'#D2B48C',fun:'Tan is a pale tone of brown originally meaning "tanned leather."'},
+  {name:'teal',hex:'#008080',fun:'Teal is named after the common teal duck, which has this color on its head.'},
+  {name:'thistle',hex:'#D8BFD8',fun:'Thistle is a pale purple named after the spiky thistle flower, Scotland\'s national emblem.'},
+  {name:'tomato',hex:'#FF6347',fun:'The tomato was considered poisonous in Europe for centuries due to its red color.'},
+  {name:'turquoise',hex:'#40E0D0',fun:'Turquoise comes from the French word meaning "Turkish stone" since it was traded through Turkey.'},
+  {name:'violet',hex:'#EE82EE',fun:'Violet has the shortest wavelength of all visible colors at about 380-450nm.'},
+  {name:'wheat',hex:'#F5DEB3',fun:'Wheat is a warm beige, the color of dried wheat stalks in late summer.'},
+  {name:'white',hex:'#FFFFFF',fun:'White light contains all wavelengths of visible light combined.'},
+  {name:'whitesmoke',hex:'#F5F5F5',fun:'White smoke is a very light gray, like thin smoke against a white background.'},
+  {name:'yellow',hex:'#FFFF00',fun:'Yellow has the highest luminosity of all hues and is most visible to the human eye.'},
+  {name:'yellowgreen',hex:'#9ACD32',fun:'Yellow green evokes the color of young, fresh leaves in early spring.'},
+];
+
+function escapeHtml(s) {
+  const d = document.createElement('div'); d.appendChild(document.createTextNode(s)); return d.innerHTML;
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length-1; i>0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+let gameState = null;
+let timerInterval = null;
+let currentMode = 'name-to-color';
+
+function getHighScore(mode) {
+  return parseInt(localStorage.getItem(`cssColorQuiz_hs_${mode}`) || '0');
+}
+function setHighScore(mode, score) {
+  if (score > getHighScore(mode)) {
+    localStorage.setItem(`cssColorQuiz_hs_${mode}`, score);
+    return true;
+  }
+  return false;
+}
+
+function showStart() {
+  document.getElementById('startScreen').classList.remove('hidden');
+  document.getElementById('gameScreen').classList.add('hidden');
+  document.getElementById('resultScreen').classList.add('hidden');
+  const hs = `High scores: Name→Color: ${getHighScore('name-to-color')}/20 · Color→Name: ${getHighScore('color-to-name')}/20`;
+  document.getElementById('highScoreDisplay').textContent = hs;
+}
+
+function startGame(mode) {
+  currentMode = mode;
+  clearInterval(timerInterval);
+
+  const questions = shuffle(CSS_COLORS).slice(0, 20);
+  gameState = {
+    mode,
+    questions,
+    current: 0,
+    score: 0,
+    correct: 0,
+    wrong: 0,
+    streak: 0,
+    maxStreak: 0,
+    answered: false,
+    timeLeft: 20,
+  };
+
+  document.getElementById('startScreen').classList.add('hidden');
+  document.getElementById('resultScreen').classList.add('hidden');
+  document.getElementById('gameScreen').classList.remove('hidden');
+
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const gs = gameState;
+  const q = gs.questions[gs.current];
+
+  document.getElementById('qNumber').textContent = gs.current + 1;
+  document.getElementById('scoreDisplay').textContent = gs.score;
+  document.getElementById('progressBar').style.width = `${(gs.current/20)*100}%`;
+
+  // Streak dots
+  const dots = document.getElementById('streakDots');
+  dots.innerHTML = Array(Math.min(gs.streak, 10)).fill('').map(() =>
+    '<div class="w-2 h-2 rounded-full bg-yellow-400 shadow-lg" aria-hidden="true"></div>'
+  ).join('');
+
+  // Wrong options
+  const wrongPool = shuffle(CSS_COLORS.filter(c => c.name !== q.name)).slice(0, 3);
+  const options = shuffle([q, ...wrongPool]);
+
+  const qArea = document.getElementById('questionArea');
+  const optsGrid = document.getElementById('optionsGrid');
+  document.getElementById('feedback').classList.add('hidden');
+  document.getElementById('nextBtn').classList.add('hidden');
+
+  if (gs.mode === 'name-to-color') {
+    qArea.innerHTML = `
+      <p class="text-sm text-gray-400 mb-2 text-center">Which color is...</p>
+      <p class="text-3xl font-bold text-center text-white font-mono">${escapeHtml(q.name)}</p>
+    `;
+    optsGrid.innerHTML = options.map((opt, i) => `
+      <button
+        class="option-btn rounded-xl overflow-hidden border-2 border-transparent hover:border-white transition-all focus:outline-none focus:border-blue-400 h-20"
+        style="background:${escapeHtml(opt.hex)}"
+        onclick="selectAnswer(${i}, '${escapeHtml(opt.name)}')"
+        data-name="${escapeHtml(opt.name)}"
+        aria-label="Color option: ${escapeHtml(opt.name)}, ${escapeHtml(opt.hex)}"
+      ></button>
+    `).join('');
+  } else {
+    qArea.innerHTML = `
+      <p class="text-sm text-gray-400 mb-3 text-center">What is this CSS color named?</p>
+      <div class="w-32 h-32 rounded-xl mx-auto shadow-xl border-4 border-gray-700" style="background:${escapeHtml(q.hex)}" role="img" aria-label="Color swatch: ${escapeHtml(q.hex)}"></div>
+      <p class="text-center text-sm text-gray-500 mt-2 font-mono">${escapeHtml(q.hex.toUpperCase())}</p>
+    `;
+    optsGrid.innerHTML = options.map((opt, i) => `
+      <button
+        class="option-btn rounded-xl p-3 bg-gray-800 hover:bg-gray-700 border-2 border-transparent transition-all text-sm font-medium font-mono focus:outline-none focus:border-blue-400"
+        onclick="selectAnswer(${i}, '${escapeHtml(opt.name)}')"
+        data-name="${escapeHtml(opt.name)}"
+        aria-label="Color name: ${escapeHtml(opt.name)}"
+      >${escapeHtml(opt.name)}</button>
+    `).join('');
+  }
+
+  // Timer
+  gs.answered = false;
+  gs.timeLeft = 20;
+  document.getElementById('timerDisplay').textContent = '20';
+  document.getElementById('timerDisplay').className = 'font-mono font-bold text-lg w-8 text-center text-white';
+  document.getElementById('timerBar').style.width = '100%';
+  document.getElementById('timerBar').style.background = 'linear-gradient(to right, #10b981, #34d399)';
+
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    if (gs.answered) return;
+    gs.timeLeft--;
+    const pct = (gs.timeLeft / 20) * 100;
+    const timerBar = document.getElementById('timerBar');
+    timerBar.style.width = `${pct}%`;
+    const timerDisp = document.getElementById('timerDisplay');
+    timerDisp.textContent = gs.timeLeft;
+
+    if (gs.timeLeft <= 5) {
+      timerBar.style.background = 'linear-gradient(to right, #ef4444, #f97316)';
+      timerDisp.className = 'font-mono font-bold text-lg w-8 text-center timer-danger';
+    } else if (gs.timeLeft <= 10) {
+      timerBar.style.background = 'linear-gradient(to right, #f59e0b, #fbbf24)';
+    }
+
+    if (gs.timeLeft <= 0) {
+      clearInterval(timerInterval);
+      timeUp();
+    }
+  }, 1000);
+
+  qArea.classList.remove('fade-slide');
+  void qArea.offsetWidth;
+  qArea.classList.add('fade-slide');
+}
+
+function selectAnswer(i, selectedName) {
+  if (gameState.answered) return;
+  gameState.answered = true;
+  clearInterval(timerInterval);
+
+  const q = gameState.questions[gameState.current];
+  const isCorrect = selectedName === q.name;
+
+  // Visual feedback on buttons
+  document.querySelectorAll('.option-btn').forEach(btn => {
+    btn.disabled = true;
+    if (btn.dataset.name === q.name) {
+      btn.classList.add('border-green-400', 'bg-green-900/30');
+      btn.classList.remove('border-transparent');
+    } else if (btn.dataset.name === selectedName && !isCorrect) {
+      btn.classList.add('border-red-400', 'bg-red-900/30', 'shake');
+      btn.classList.remove('border-transparent');
+    }
+  });
+
+  if (isCorrect) {
+    gameState.score += 5;
+    gameState.correct++;
+    gameState.streak++;
+    gameState.maxStreak = Math.max(gameState.maxStreak, gameState.streak);
+    document.getElementById('scoreDisplay').textContent = gameState.score;
+  } else {
+    gameState.wrong++;
+    gameState.streak = 0;
+  }
+
+  showFeedback(q, isCorrect);
+}
+
+function timeUp() {
+  if (gameState.answered) return;
+  gameState.answered = true;
+  gameState.wrong++;
+  gameState.streak = 0;
+  const q = gameState.questions[gameState.current];
+
+  document.querySelectorAll('.option-btn').forEach(btn => {
+    btn.disabled = true;
+    if (btn.dataset.name === q.name) {
+      btn.classList.add('border-yellow-400', 'bg-yellow-900/30');
+      btn.classList.remove('border-transparent');
+    }
+  });
+
+  showFeedback(q, false, true);
+}
+
+function showFeedback(q, isCorrect, timedOut = false) {
+  const fb = document.getElementById('feedback');
+  fb.classList.remove('hidden');
+  fb.classList.remove('fade-slide');
+  void fb.offsetWidth;
+  fb.classList.add('fade-slide');
+
+  const statusEmoji = timedOut ? '⏰' : isCorrect ? '✅' : '❌';
+  const statusText = timedOut ? 'Time\'s up!' : isCorrect ? 'Correct!' : 'Wrong!';
+  const statusColor = timedOut ? 'text-yellow-400' : isCorrect ? 'text-green-400' : 'text-red-400';
+
+  fb.innerHTML = `
+    <div class="flex items-start gap-3">
+      <div class="w-10 h-10 rounded-lg flex-shrink-0 border border-gray-600" style="background:${escapeHtml(q.hex)}" role="img" aria-label="Correct color: ${escapeHtml(q.name)}"></div>
+      <div>
+        <p class="${statusColor} font-bold">${statusEmoji} ${escapeHtml(statusText)}</p>
+        <p class="text-white font-mono font-medium">${escapeHtml(q.name)} <span class="text-gray-400 text-sm">${escapeHtml(q.hex.toUpperCase())}</span></p>
+        <p class="text-gray-400 text-sm mt-1">${escapeHtml(q.fun)}</p>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('nextBtn').classList.remove('hidden');
+}
+
+function nextQuestion() {
+  gameState.current++;
+  if (gameState.current >= 20) {
+    endGame();
+  } else {
+    renderQuestion();
+  }
+}
+
+function endGame() {
+  clearInterval(timerInterval);
+  document.getElementById('gameScreen').classList.add('hidden');
+  document.getElementById('resultScreen').classList.remove('hidden');
+
+  const gs = gameState;
+  const pct = Math.round((gs.correct / 20) * 100);
+  const isNew = setHighScore(gs.mode, gs.correct);
+
+  const emojis = pct >= 90 ? '🏆' : pct >= 70 ? '🎉' : pct >= 50 ? '👍' : '📚';
+  const titles = pct >= 90 ? 'CSS Color Master!' : pct >= 70 ? 'Color Expert!' : pct >= 50 ? 'Good Progress!' : 'Keep Practicing!';
+
+  document.getElementById('resultEmoji').textContent = emojis;
+  document.getElementById('resultTitle').textContent = titles;
+  document.getElementById('resultScore').textContent = `${gs.correct}/20 correct`;
+  document.getElementById('resultDetail').textContent = `Score: ${gs.score} points · ${pct}% accuracy`;
+  document.getElementById('highScoreMsg').textContent = isNew ? '🌟 New High Score!' : `Best: ${getHighScore(gs.mode)}/20`;
+
+  document.getElementById('resultStats').innerHTML = `
+    <div class="bg-gray-800 rounded-xl p-3 text-center">
+      <div class="text-2xl font-bold text-green-400">${gs.correct}</div>
+      <div class="text-xs text-gray-400">Correct</div>
+    </div>
+    <div class="bg-gray-800 rounded-xl p-3 text-center">
+      <div class="text-2xl font-bold text-red-400">${gs.wrong}</div>
+      <div class="text-xs text-gray-400">Wrong</div>
+    </div>
+    <div class="bg-gray-800 rounded-xl p-3 text-center">
+      <div class="text-2xl font-bold text-yellow-400">${gs.maxStreak}</div>
+      <div class="text-xs text-gray-400">Best Streak</div>
+    </div>
+  `;
+}
+
+// Init
+showStart();
+</script>
+</body>
+</html>
